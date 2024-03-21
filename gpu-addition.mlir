@@ -18,11 +18,11 @@ func.func @main() {
 
     // How to reduce affine.for ???
      
-    // affine.for %i = 0 to %size {
-    //     memref.store %constant_1, %arg0[%i] : memref<4xf32>
-    //     memref.store %constant_2, %arg1[%i] : memref<4xf32>
+    affine.for %i = 0 to %size {
+        memref.store %constant_1, %arg0[%i] : memref<4xf32>
+        memref.store %constant_2, %arg1[%i] : memref<4xf32>
 
-    // }
+    }
 
     memref.store %constant_1, %arg0[%c0] : memref<4xf32>
     memref.store %constant_1, %arg0[%c1] : memref<4xf32>

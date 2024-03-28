@@ -5,22 +5,22 @@ module attributes {gpu.container_module} {
     gpu.module @kernels {
         gpu.func @add_arrays (%arg0: memref<?xf32>, %arg1: memref<?xf32>, %arg2: memref<?xf32>) kernel {
             %idx = gpu.thread_id x
-            
+
             %val0 = memref.load %arg0[%idx] : memref<?xf32>
             %val1 = memref.load %arg1[%idx] : memref<?xf32>
 
             %result = arith.addf %val0, %val1 : f32
             memref.store %result, %arg2[%idx] : memref<?xf32>
-    
+            gpu.printf "Thread ID: %lld \t Result: %f\n" %idx, %result  : index, f32
+
             gpu.return
         }
     }
 
 
-
     func.func @main() {
 
-        %size = arith.constant 4 : index
+        %size = arith.constant 8 : index
 
         %c0 = arith.constant 0 : index
         %c1 = arith.constant 1 : index
@@ -40,14 +40,27 @@ module attributes {gpu.container_module} {
             memref.store %constant_2, %arg1[%i] : memref<?xf32>
         }
 
-        %printval = memref.cast %arg2 : memref<?xf32> to memref<*xf32>
+        %gpu_arg0 = gpu.alloc(%size) : memref<?xf32>
+        %gpu_arg1 = gpu.alloc(%size) : memref<?xf32>
+        %gpu_arg2 = gpu.alloc(%size) : memref<?xf32>
+
+        gpu.memcpy %gpu_arg0, %arg0 : memref<?xf32>, memref<?xf32>
+        gpu.memcpy %gpu_arg1, %arg1 : memref<?xf32>, memref<?xf32>
+
+        // %gpu_arg1 = gpu.alloc(%size) : memref<?xf32>
+        // %gpu_arg2 = gpu.alloc(%size) : memref<?xf32>
+
+        // 
+        // gpu.memcpy %gpu_arg1, %arg1 : memref<?xf32>, memref<?xf32>
+
+        //%printval = memref.cast %arg2 : memref<?xf32> to memref<*xf32>
         
         gpu.launch_func @kernels::@add_arrays
             blocks in (%c1, %c1, %c1) 
             threads in (%size, %c1, %c1)
-            args(%arg0 : memref<?xf32> , %arg1 : memref<?xf32>, %arg2 : memref<?xf32>)
+            args(%gpu_arg0 : memref<?xf32> , %gpu_arg1 : memref<?xf32>, %gpu_arg2 : memref<?xf32>)
 
-        call @printMemrefF32(%printval) : (memref<*xf32>) -> ()
+        //call @printMemrefF32(%printval) : (memref<*xf32>) -> ()
         //CHECK: [3, 3, 3, 3]
         return
     }
